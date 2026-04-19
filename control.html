@@ -2,81 +2,65 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>MERKAVIM CONTROL v1.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERKAVIM CONTROL - SCANNER</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body {
-            background-color: #1a1a1a;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-        .header { background: #2c3e50; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        .balance { font-size: 24px; color: #2ecc71; margin: 10px 0; }
-        
-        .camera-section {
-            border: 2px dashed #3498db;
-            padding: 40px;
-            border-radius: 15px;
-            margin: 20px 0;
-            background: #252525;
-        }
-        
-        input {
-            padding: 15px;
-            font-size: 18px;
-            width: 80%;
-            border-radius: 5px;
-            border: none;
-            margin-top: 10px;
-        }
-        
-        .btn {
-            background: #3498db;
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            margin-top: 20px;
-            cursor: pointer;
-        }
-        .btn-scan { background: #e67e22; }
+        body { background: #1a1a1a; color: white; font-family: sans-serif; text-align: center; margin: 0; }
+        .header { background: #2c3e50; padding: 15px; }
+        #reader { width: 100%; max-width: 500px; margin: 20px auto; border-radius: 10px; overflow: hidden; }
+        .result-box { margin: 20px; padding: 20px; border-radius: 10px; display: none; }
+        .success { background: #27ae60; }
+        .btn-start { background: #3498db; color: white; padding: 15px 30px; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h1>MERKAVIM CONTROL</h1>
-    <div id="clock">00:00:00</div>
+    <p>Режим сканирования билетов</p>
 </div>
 
-<div class="balance">Текущий баланс: 0.00 ₪</div>
+<div id="reader"></div>
 
-<div class="camera-section">
-    <h3>Раздел CAMERA</h3>
-    <button class="btn btn-scan" onclick="alert('Камера запускается...')">📷 ОТСКАНЕРОВАТЬ QR</button>
-    <p>— ИЛИ —</p>
-    <input type="number" id="ticketCode" placeholder="4 последние цифры билета">
-    <button class="btn" onclick="checkTicket()">ПРОВЕРИТЬ</button>
+<button class="btn-start" onclick="startScanner()">ВКЛЮЧИТЬ СКАНЕР</button>
+
+<div id="result" class="result-box">
+    <h2 id="res-title"></h2>
+    <p id="res-text"></p>
 </div>
-
-<div id="result"></div>
 
 <script>
-    // Обновление времени
-    setInterval(() => {
-        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
-    }, 1000);
+    function startScanner() {
+        const html5QrCode = new Html5Qrcode("reader");
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            // Когда код отсканирован:
+            showResult(decodedText);
+            html5QrCode.stop(); // Остановить камеру после успеха
+        };
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-    function checkTicket() {
-        let code = document.getElementById('ticketCode').value;
-        if(code.length === 4) {
-            document.getElementById('result').innerHTML = <h2 style="color: #2ecc71;">БИЛЕТ №${code} ВАЛИДЕН</h2><p>Получен: ${new Date().toLocaleTimeString()}</p>;
-        } else {
-            alert('Введите ровно 4 цифры!');
-        }
+        html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+        .catch(err => alert("Ошибка камеры: " + err));
+    }
+
+    function showResult(text) {
+        const resBox = document.getElementById('result');
+        const resTitle = document.getElementById('res-title');
+        const resText = document.getElementById('res-text');
+        
+        // Писк при сканировании
+        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let osc = audioCtx.createOscillator();
+        osc.connect(audioCtx.destination);
+        osc.start();
+        setTimeout(() => osc.stop(), 150);
+
+        resBox.style.display = "block";
+        resBox.className = "result-box success";
+        resTitle.innerText = "✅ БИЛЕТ СЧИТАН";
+        // Выводим весь текст из QR (например, TICKET_17766...)
+        resText.innerText = "ДАННЫЕ: " + text;
     }
 </script>
 
