@@ -3,68 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MERKAVIM CONTROL - PRO</title>
+    <title>MERKAVIM CONTROL - SMART</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { background: #1a1a1a; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding-bottom: 50px; }
         .header { background: #2c3e50; padding: 15px; border-bottom: 3px solid #3498db; }
         
-        /* Стили сканера */
-        #reader { width: 90%; max-width: 400px; margin: 20px auto; border-radius: 15px; overflow: hidden; border: 2px solid #34495e; }
-        .btn-start { background: #3498db; color: white; padding: 12px 25px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-bottom: 20px; }
+        #reader { width: 90%; max-width: 400px; margin: 10px auto; border-radius: 15px; overflow: hidden; border: 2px solid #34495e; }
+        .btn-start { background: #3498db; color: white; padding: 12px 25px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 10px; }
 
-        /* Стили клавиатуры-антистресс */
         .keypad-container {
             background: #252525;
             width: 280px;
-            margin: 20px auto;
+            margin: 15px auto;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 1px solid #444;
         }
-        .keypad-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
+        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         .key {
-            background: #333;
-            color: white;
-            border: none;
-            padding: 20px;
-            font-size: 24px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.1s;
-            box-shadow: 0 4px #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
-            margin: auto;
+            background: #333; color: white; border: none; padding: 15px; font-size: 24px;
+            border-radius: 50%; cursor: pointer; transition: 0.1s; box-shadow: 0 4px #000;
+            width: 65px; height: 65px; margin: auto; display: flex; align-items: center; justify-content: center;
         }
-        .key:active {
-            background: #444;
-            transform: translateY(4px);
-            box-shadow: 0 0 #000;
-        }
-        .key-special { color: #3498db; font-weight: bold; }
+        .key:active { transform: translateY(3px); box-shadow: 0 1px #000; background: #444; }
         
+        /* Кнопка звонка */
+        .key-call { background: #27ae60; grid-column: span 3; width: 100%; border-radius: 10px; margin-top: 10px; box-shadow: 0 4px #1e8449; }
+        .key-call:active { box-shadow: 0 1px #1e8449; }
+
         #display {
-            background: #000;
-            color: #2ecc71;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 20px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-            min-height: 25px;
-            letter-spacing: 2px;
+            background: #000; color: #2ecc71; padding: 15px; font-family: 'Courier New', monospace;
+            font-size: 22px; margin-bottom: 15px; border-radius: 8px; min-height: 30px; border: 1px solid #333;
         }
 
-        .result-box { margin: 20px; padding: 20px; border-radius: 10px; display: none; background: #27ae60; }
+        .modal { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; color: black; padding: 30px; border-radius: 15px; width: 80%; z-index: 100;
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+        }
     </style>
 </head>
 <body>
@@ -75,7 +53,7 @@
 </div>
 
 <div id="reader"></div>
-<button class="btn-start" onclick="startScanner()">📷 ВКЛЮЧИТЬ СКАНЕР</button>
+<button class="btn-start" onclick="startScanner()">📷 СКАНЕР</button>
 
 <div class="keypad-container">
     <div id="display">READY_</div>
@@ -89,50 +67,40 @@
         <button class="key" onclick="press('7')">7</button>
         <button class="key" onclick="press('8')">8</button>
         <button class="key" onclick="press('9')">9</button>
-        <button class="key key-special" onclick="press('*')">*</button>
+        <button class="key" style="color:#3498db" onclick="press('*')">*</button>
         <button class="key" onclick="press('0')">0</button>
-        <button class="key key-special" onclick="press('#')">#</button>
+        <button class="key" style="color:#3498db" onclick="press('#')">#</button>
+        <button class="key key-call" onclick="makeCall()">📞 ВЫЗОВ / 🔎</button>
     </div>
-    <button class="btn-start" style="margin-top:20px; width:100%; background:#e74c3c;" onclick="clearDisplay()">СБРОС</button>
+    <button class="btn-start" style="width:100%; background:#e74c3c; margin:15px 0 0 0;" onclick="clearDisplay()">СБРОС</button>
 </div>
 
-<div id="result" class="result-box">
-    <h2 id="res-title">✅ БИЛЕТ СЧИТАН</h2>
-    <p id="res-text"></p>
+<div id="sysMsg" class="modal">
+    <h3 id="sysTitle">СИСТЕМА</h3>
+    <p id="sysText"></p>
+    <button class="btn-start" onclick="closeMsg()">ЗАКРЫТЬ</button>
 </div>
 
 <script>
     let displayContent = "";
 
-    // Функция звука для кнопок
-    function playBeep(freq = 440) {
+    function playBeep(freq = 500, type = 'sine', duration = 0.1) {
         let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let osc = audioCtx.createOscillator();
         let gain = audioCtx.createGain();
-        
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        
-        osc.type = 'sine';
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = type;
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        
         osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
-        setTimeout(() => osc.stop(), 100);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        setTimeout(() => osc.stop(), duration * 1000);
     }
 
-    function press(num) {
-        playBeep(600); // Обычный писк кнопки
-        displayContent += num;
+    function press(n) {
+        playBeep(600);
+        displayContent += n;
         document.getElementById('display').innerText = displayContent;
-        
-        // Антистресс эффект: если тыкаешь много, экран мигает
-        if(displayContent.length > 12) {
-            displayContent = "ERR_OVERLOAD";
-            playBeep(200); // Низкий звук ошибки
-            setTimeout(clearDisplay, 500);
-        }
     }
 
     function clearDisplay() {
@@ -141,13 +109,48 @@
         playBeep(300);
     }
 
+    function showMsg(title, text) {
+        document.getElementById('sysTitle').innerText = title;
+        document.getElementById('sysText').innerText = text;
+        document.getElementById('sysMsg').style.display = 'block';
+    }
+
+    function closeMsg() {
+        document.getElementById('sysMsg').style.display = 'none';
+        clearDisplay();
+    }
+
+    function makeCall() {
+        playBeep(800, 'square', 0.2);
+        
+        if (displayContent === "*100#") {
+            showMsg("БАЛАНС", "Ваш текущий баланс: 154.50 ₪. Тариф: Merkavim City.");
+        } 
+        else if (displayContent === "*552#") {
+            showMsg("ПЕРЕХОД", "Загрузка пульта водителя...");
+            setTimeout(() => { window.location.href = "Меркавим.html"; }, 1500);
+        }
+        else if (displayContent === "#1000#") {
+            showMsg("СПРАВОЧНАЯ", "Вызываю справочную службу города Ришон-ле-Цион...");
+            setTimeout(() => { window.location.href = "https://www.google.com/search?q=Egged+bus+schedule"; }, 1500);
+        }
+        else if (displayContent === "*911#") {
+            document.body.style.background = "red";
+            showMsg("SOS", "ВНИМАНИЕ! Вызваны экстренные службы!");
+            setTimeout(() => { document.body.style.background = "#1a1a1a"; }, 3000);
+        }
+        else {
+            showMsg("ОШИБКА", "Команда " + displayContent + " не найдена.");
+        }
+    }
+
     function startScanner() {
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
         (text) => {
-            playBeep(880); 
-            document.getElementById('result').style.display = "block";
-            document.getElementById('res-text').innerText = text;
+            playBeep(900, 'sine', 0.3);
+            showMsg("БИЛЕТ СЧИТАН", "Данные кода: " + text);
+            html5QrCode.stop();
         }).catch(err => console.log(err));
     }
 </script>
