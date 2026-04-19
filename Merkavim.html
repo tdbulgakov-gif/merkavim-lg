@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>MERKAVIM ADMIN v-20.2 - FINAL STOP</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; margin: 0; padding: 0; text-align: center; }
+        .header { background: white; padding: 15px; border-bottom: 1px solid #ddd; }
+        .header h1 { margin: 0; font-size: 32px; letter-spacing: 2px; color: #333; font-weight: 900; }
+        .top-time-bar { background: #2c3e50; color: white; padding: 8px; font-size: 16px; font-weight: bold; }
+        .main-board { background: #202b36; color: #ff9d00; padding: 25px; border-radius: 15px; font-family: monospace; font-size: 24px; width: 85%; margin: 20px auto; border: 1px solid #444; min-height: 100px; display: flex; flex-direction: column; justify-content: center; }
+        #announcement { color: #ff4444; font-weight: bold; font-size: 20px; margin-top: 15px; min-height: 30px; text-transform: uppercase; }
+        .blink { animation: blinker 0.8s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+        .map-container { width: 90%; height: 50px; background: linear-gradient(to right, #ddd, #bbb, #ddd); margin: 60px auto 20px auto; position: relative; border-radius: 25px; border: 3px solid #2c3e50; }
+        .bus-icon { position: absolute; top: -15px; font-size: 40px; transition: left 1s linear; z-index: 10; }
+        .map-label { position: absolute; bottom: -35px; font-size: 14px; font-weight: bold; color: #2c3e50; width: 150px; }
+        .btn-container { width: 90%; margin: 0 auto; }
+        .nav-btn { width: 100%; border: none; padding: 20px; margin: 12px 0; border-radius: 15px; font-size: 20px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-green { background: #2e7d32; } .btn-blue { background: #3498db; } .btn-orange { background: #ff9f43; }
+        .screen { display: none; padding: 20px; animation: fadeIn 0.3s; }
+        .active { display: block; }
+        .stop-item { background: white; padding: 12px; margin: 5px; border-radius: 8px; text-align: left; border-left: 5px solid #2e7d32; font-weight: bold; }
+        .balance-val { font-size: 60px; font-weight: 900; margin: 30px 0; color: #333; }
+        .admin-panel { background: #fff; padding: 20px; border-radius: 15px; margin: 20px auto; width: 85%; display: none; border: 3px solid #333; }
+        .admin-btn { width: 100%; padding: 12px; margin: 5px 0; font-weight: bold; cursor: pointer; border-radius: 8px; border: none; color: white; }
+        .footer-gear { font-size: 14px; color: #bbb; cursor: pointer; margin: 40px 0; padding: 20px; }
+        .ticket-box { background: white; border: 2px dashed #999; padding: 20px; border-radius: 15px; margin-top: 20px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="header"><h1>MERKAVIM</h1></div>
+    <div id="top-bar" class="top-time-bar">...</div>
+
+    <div id="scr-main" class="screen active">
+        <div class="main-board">
+            <div id="board-text">ЗАГРУЗКА...</div>
+            <div id="announcement"></div>
+        </div>
+        <div class="btn-container">
+            <button class="nav-btn btn-green" onclick="showRoutesList()">🚌 Маршруты и Остановки</button>
+            <button class="nav-btn btn-blue" onclick="showScreen('scr-map')">🗺️ Линия маршрута</button>
+            <button class="nav-btn btn-orange" onclick="showScreen('scr-balance')">💳 Баланс</button>
+        </div>
+        
+        <div id="admin-tools" class="admin-panel">
+            <h2 style="color:#333">CONTROL PANEL</h2>
+            <button class="admin-btn" style="background:#e74c3c;" onclick="setSystemStatus('emergency')">תאונה (Авария)</button>
+            <button class="admin-btn" style="background:#f39c12;" onclick="setSystemStatus('break')">הפסקה (Перерыв)</button>
+            <button class="admin-btn" style="background:#2c3e50;" onclick="setSystemStatus('no-service')">לא בשירות (Стоп)</button>
+            <button class="admin-btn" style="background:#27ae60;" onclick="setSystemStatus('normal')">СТАНДАРТ</button>
+            <button class="nav-btn btn-blue" style="font-size:14px; padding:10px;" onclick="document.getElementById('admin-tools').style.display='none'">Закрыть</button>
+        </div>
+        <div class="footer-gear" onclick="loginAdmin()">⚙️ adm_panel</div>
+    </div>
+
+    <div id="scr-map" class="screen">
+        <button class="nav-btn btn-blue" onclick="showScreen('scr-main')">← Назад</button>
+        <h2 id="map-dest-title">...</h2>
+        <div class="map-container">
+            <div id="bus" class="bus-icon">🚌</div>
+            <div class="map-label" style="left: 0;">СТАРТ</div>
+            <div class="map-label" style="right: 0; text-align: right;">КОНЕЧНАЯ</div>
+        </div>
+        <div id="map-current-stop" style="margin-top: 50px; font-size: 20px; color: #e74c3c; font-weight: bold;"></div>
+    </div>
+
+    <div id="scr-balance" class="screen">
+        <button class="nav-btn btn-blue" onclick="showScreen('scr-main')">← Назад</button>
+        <div class="balance-val">Ł <span id="bal-val">0</span></div>
+        <div class="btn-container">
+            <button class="nav-btn btn-green" onclick="addMoney()">➕ Пополнить (+1 Ł)</button>
+            <button class="nav-btn btn-orange" onclick="buyTicket()">🎫 Оплатить проезд (10 Ł)</button>
+        </div>
+        <div id="ticket-area" style="display:none;" class="ticket-box">
+            <div style="font-size:14px; color:#27ae60; font-weight:bold; margin-bottom:10px;">БИЛЕТ АКТИВИРОВАН</div>
+            <div id="qrcode" style="display:flex; justify-content:center;"></div>
+        </div>
+    </div>
+
+    <div id="scr-routes" class="screen"><button class="nav-btn btn-blue" onclick="showScreen('scr-main')">← Назад</button><div id="routes-buttons"></div></div>
+    <div id="scr-stops" class="screen"><button class="nav-btn btn-blue" onclick="showScreen('scr-routes')">← Назад</button><div id="stops-container"></div></div>
+
+    <script>
+        const routeData = {
+            5: { to: "Terminal 3", voice: "קו 5 ל טרמינל 3", stops: ["∆ Shamir Medical center", "Hana Michael Levin / Olga Vi'uvishua", "Sderot HaTsiyunot / HaaTzmayut", "Road HaMaCaBim / Boulevard HaTsiyunot", "Arav TZalach / Kupat Holim", "Giv'ati / Aahim Suli'man", "MichaelVeHanaLevin / Jerusalem", "Road HaMaCaBim / School Haklaii", "Shmotkin / Bershevsky", "Central Station Rishon-LeTsion", "Central Station / Leacify", "Shmotkin / Tulifman", "Road 44 / Road Haim Herzog", "Hana Michael Levin / Haim Sharf", "Katriel Rapaport / Hana Michael Levin", "Katriel Rapaport / Haim Herzog", "∆ Egged Parking / Dan Shomron"] },
+            10: { to: "Central Station", voice: "קו 10 לתחנה מרכזית", stops: ["∆ Central Station Rishon-LeTsion", "Central Station / Leacify", "Giv'ati / Aahim Suli'man", "MichaelVeHanaLevin / Jerusalem", "Road HaMaCaBim / School Haklaii", "Shmotkin / Bershevsky", "Eli Choen / Gibuey Israel", "Eli Choen / MahaViley Exodus", "Shmotkin / Tulifman", "Road 44 / Road Haim Herzog", "∆ HaRishonim Railway Station"] },
+            "14_malls": { to: "לקניונים (Malls)", voice: "קו 14 לקניונים", stops: ["∆ Golden Mall / Moshe Levi", "Joseph Lishanski / David Saharov", "Davidson Garden / Segal", "Hana Michael Levin / Olga Vi'uvishua", "Shamir Medical center", "Sderot HaTsiyunot / HaaTzmayut", "Road HaMaCaBim = Sderot HaTsiyunot", "Central Station Rishon-LeTsion", "Central Station / Leacify", "Giv'ati / Aahim Suli'man", "MichaelVeHanaLevin / Jerusalem", "Road HaMaCaBim / School Haklaii", "Boulevard HaTsiyunot / Road HaMaCaBim", "Shmotkin / Bershevsky", "Eli Choen / Gibuey Israel", "Eli Choen / MahaViley Exodus", "Shmotkin / Tulifman", "Road 44 / Road Haim Herzog", "Hana Michael Levin / Haim Sharf", "Katriel Rapaport / Hana Michael Levin", "Katriel Rapaport / Haim Herzog", "∆ Nesiya / HaTaisian"] },
+            "14_inst": { to: "למיכון וולקני (Institute)", voice: "קו 14 למיכון וולקני", stops: ["∆ Nesiya / HaTaisian", "Katriel Rapaport", "Haim Herzog", "Shmotkin / Tulifman", "Eli Choen", "MichaelVeHanaLevin", "Central Station", "Road HaMaCaBim", "Shamir Medical center", "Davidson Garden", "∆ Volcani Institute"] },
+            15: { to: "Talpiot", voice: "קו 15 לתלפיות", stops: ["∆ Central Station Rishon-LeTsion", "Central Station / Leacify", "Hana Michael Levin / Haim Sharf", "Shamir Medical Center", "Davidson Garden / Segal", "Joseph Lishanski / David Saharov", "HaZahaf Mall / Moshe Levi", "Giv'ati / Aahim Suli'man", "MichaelVeHanaLevin / Jerusalem", "Road HaMaCaBim / School Haklaii", "Boulevard HaTsiyunot / Road HaMaCaBim", "Shmotkin / Bershevsky", "∆ Eli Choen / Gibuey Israel"] },
+            17: { to: "Malls / Holon", voice: "קו 17 לחולון", stops: ["∆ Golden Mall / Moshe Levi", "Joseph Lishanski / David Saharov", "Davidson Garden / Segal", "Hana Michael Levin / Olga Vi'uvishua", "Shamir Medical center", "Sderot HaTsiyunot / HaaTzmayut", "Road HaMaCaBim / Boulevard HaTsiyunot", "Central Station Rishon-LeTsion", "Central Station / Leacify", "Giv'ati / Aahim Suli'man", "MichaelVeHanaLevin / Jerusalem", "Road HaMaCaBim / School Haklaii", "Boulevard HaTsiyunot / Road HaMaCaBim", "Shmotkin / Bershevsky", "Eli Choen / Gibuey Israel", "Eli Choen / MahaViley Exodus", "Shmotkin / Tulifman", "Road 44 / Road Haim Herzog", "Hana Michael Levin / Haim Sharf", "Katriel Rapaport / Hana Michael Levin", "Katriel Rapaport / Haim Herzog", "∆ Egged Parking"] }
+        };
+
+        const ids = [5, 10, "14_malls", "14_inst", 15, 17];
+        const CYCLE = 10 * 60 * 1000;
+        let systemStatus = localStorage.getItem('sys_status') || 'normal';
+        let balance = parseInt(localStorage.getItem('legoins') || 100);
+        let startTime = parseInt(localStorage.getItem('m_start') || Date.now());
+        let routeIdx = parseInt(localStorage.getItem('m_idx') || 0);
+
+        function loginAdmin() {
+            if(prompt("Пароль администратора:") === "2011") { document.getElementById('admin-tools').style.display = "block"; }
+            else { alert("Доступ закрыт!"); }
+        }
+
+        function setSystemStatus(s) {
+            systemStatus = s;
+            localStorage.setItem('sys_status', s);
+            location.reload(); // Перезагружаем, чтобы всё обнулилось
+        }
+
+        function addMoney() { balance++; localStorage.setItem('legoins', balance); update(); }
+        function buyTicket() {
+            if (balance < 10) return alert("Недостаточно средств!");
+            balance -= 10; localStorage.setItem('legoins', balance);
+            document.getElementById('ticket-area').style.display = "block";
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { text: "TICKET_" + Date.now(), width: 120, height: 120 });
+            update();
+        }
+
+        function speak(text) {
+            const u = new SpeechSynthesisUtterance(text); u.lang = 'he-IL'; u.rate = 0.9;
+            window.speechSynthesis.speak(u);
+        }
+
+        function update() {
+            const now = new Date();
+            const timeVal = now.getHours() + now.getMinutes() / 60;
+            const board = document.getElementById('board-text');
+            const ann = document.getElementById('announcement');
+            const busIcon = document.getElementById('bus');
+            const topBar = document.getElementById('top-bar');
+
+            topBar.innerText = now.toLocaleString();
+            document.getElementById('bal-val').innerText = balance;
+
+            // 1. ПРОВЕРКА БЛОКИРОВОК (Ночь, Шаббат, Админ)
+            let isShabbat = (now.getDay() === 5 && timeVal >= 16.5) || (now.getDay() === 6 && timeVal <= 20);
+            let isNight = (timeVal < 7.25 || timeVal > 23.25);
+            let isEmergency = (systemStatus !== 'normal');
+
+            if (isEmergency || isShabbat || isNight) {
+                // Если заблокировано - очищаем всё лишнее
+                ann.innerText = ""; 
+                ann.className = "";
+                busIcon.style.left = "0%"; // Возвращаем автобус в депо
+
+                if (systemStatus === 'emergency') { board.innerHTML = '<span style="color:#ff4444">⚠️ תאונה - АВАРИЯ ⚠️</span>'; ann.innerText = "СТОП"; }
+                else if (systemStatus === 'no-service') { board.innerHTML = '<span style="color:#ff4444">לא בשירות - В ДЕПО</span>'; }
+                else if (systemStatus === 'break') { board.innerHTML = '<span style="color:#f39c12">הפסקה - ПЕРЕРЫВ</span>'; }
+                else if (isShabbat) { board.innerHTML = '<span style="color:#ff4444">שבת - אין קווים</span>'; ann.innerText = "ШАББАТ"; }
+                else if (isNight) { board.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">------------- לيلة - אין שירות -------------</span>'; }
+                return; // ВАЖНО: дальше код не идет!
+            }
+
+            // 2. ЕСЛИ ВСЁ ОК - РАБОТАЕМ
+            let elapsed = Date.now() - startTime;
+            if (elapsed >= CYCLE + 5000) {
+                startTime = Date.now(); routeIdx = Math.floor(Math.random() * ids.length);
+                localStorage.setItem('m_start', startTime); localStorage.setItem('m_idx', routeIdx);
+                elapsed = 0;
+            }
+
+            const currentKey = ids[routeIdx];
+            const route = routeData[currentKey];
+            const busNum = currentKey.toString().split('_')[0];
+            const remainMin = Math.ceil((CYCLE - elapsed) / 60000);
+            
+            board.innerHTML = `קו ${busNum} ל ${route.to} | ${elapsed >= CYCLE ? 'СЕЙЧАС' : remainMin + ' min'}`;
+
+            const numStops = route.stops.length;
+            const stopIdx = Math.min(Math.floor((elapsed / CYCLE) * numStops), numStops - 1);
+            const currentStop = route.stops[stopIdx];
+            const secCycle = Math.floor((elapsed / 1000) % 30);
+            
+            if (secCycle < 15) { ann.innerText = "Next stop : " + currentStop; ann.className = ""; }
+            else if (secCycle < 22) { ann.innerText = "Bus stop : " + currentStop; ann.className = "blink"; }
+            else { ann.innerText = ""; }
+
+            busIcon.style.left = Math.min((elapsed / CYCLE) * 100, 94) + "%";
+            document.getElementById('map-dest-title').innerText = `Линия ${busNum} → ${route.to}`;
+            document.getElementById('map-current-stop').innerText = (secCycle < 22) ? currentStop : "В пути...";
+        }
+
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function showRoutesList() {
+            const cont = document.getElementById('routes-buttons');
+            cont.innerHTML = ids.map(id => `<button class="nav-btn btn-green" onclick="speak('${routeData[id].voice}'); showStops('${id}')">Линия ${id.toString().split('_')[0]}</button>`).join('');
+            showScreen('scr-routes');
+        }
+        function showStops(id) {
+            document.getElementById('stops-container').innerHTML = routeData[id].stops.map(s => `<div class="stop-item">${s}</div>`).join('');
+            showScreen('scr-stops');
+        }
+
+        setInterval(update, 1000);
+        update();
+    </script>
+</body>
+</html>
