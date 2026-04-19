@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>MERKAVIM CONTROL v1.0</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .header { background: #2c3e50; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .balance { font-size: 24px; color: #2ecc71; margin: 10px 0; }
+        
+        .camera-section {
+            border: 2px dashed #3498db;
+            padding: 40px;
+            border-radius: 15px;
+            margin: 20px 0;
+            background: #252525;
+        }
+        
+        input {
+            padding: 15px;
+            font-size: 18px;
+            width: 80%;
+            border-radius: 5px;
+            border: none;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        .btn-scan { background: #e67e22; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>MERKAVIM CONTROL</h1>
+    <div id="clock">00:00:00</div>
+</div>
+
+<div class="balance">Текущий баланс: 0.00 ₪</div>
+
+<div class="camera-section">
+    <h3>Раздел CAMERA</h3>
+    <button class="btn btn-scan" onclick="alert('Камера запускается...')">📷 ОТСКАНЕРОВАТЬ QR</button>
+    <p>— ИЛИ —</p>
+    <input type="number" id="ticketCode" placeholder="4 последние цифры билета">
+    <button class="btn" onclick="checkTicket()">ПРОВЕРИТЬ</button>
+</div>
+
+<div id="result"></div>
+
+<script>
+    // Обновление времени
+    setInterval(() => {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+    }, 1000);
+
+    function checkTicket() {
+        let code = document.getElementById('ticketCode').value;
+        if(code.length === 4) {
+            document.getElementById('result').innerHTML = <h2 style="color: #2ecc71;">БИЛЕТ №${code} ВАЛИДЕН</h2><p>Получен: ${new Date().toLocaleTimeString()}</p>;
+        } else {
+            alert('Введите ровно 4 цифры!');
+        }
+    }
+</script>
+
+</body>
+</html>
